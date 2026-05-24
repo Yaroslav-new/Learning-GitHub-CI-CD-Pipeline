@@ -3,7 +3,7 @@ name: Python app in CI/CD pipline
 on: [push, workflow_dispatch]
 
 jobs:
- job-lint-and-test:
+  job-lint-and-test:
     name: Lint and Test
     runs-on: ubuntu-latest
     steps:
@@ -26,14 +26,14 @@ jobs:
       - name: Test the script
         run: python hello.py | grep -i hello || exit 1
 
-job-build-and-push:
+  job-build-and-push:
     name: Build-and-Push
     needs: job-lint-and-test
     runs-on: ubuntu-latest
     permissions:
       packages: write
       contents: read
-      
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -70,7 +70,7 @@ job-build-and-push:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
- job-test-image:
+  job-test-image:
     name: Pull and Test Container
     needs: job-build-and-push
     runs-on: ubuntu-latest
@@ -84,8 +84,11 @@ job-build-and-push:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set lowercase repo name
+        run: echo "REPO=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
       - name: Pull the image from GitHub Container Registry
-        run: docker pull ghcr.io/${{ github.repository | lower }}:${{ github.sha }}
+        run: docker pull ghcr.io/${{ env.REPO }}:${{ github.sha }}
 
       - name: Run the Image
-        run: docker run --rm ghcr.io/${{ github.repository | lower }}:${{ github.sha }} | grep -i hello || exit 1
+        run: docker run --rm ghcr.io/${{ env.REPO }}:${{ github.sha }} | grep -i hello || exit 1
